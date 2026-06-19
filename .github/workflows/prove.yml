@@ -1,0 +1,40 @@
+name: Prove Crossref connector
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate and seal harness
+        env:
+          RUNX_RECEIPT_SIGN_KID: ${{ vars.RUNX_RECEIPT_SIGN_KID }}
+          RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64: ${{ secrets.RUNX_RECEIPT_SIGN_ED25519_SEED_BASE64 }}
+          RUNX_RECEIPT_SIGN_ISSUER_TYPE: ci
+        run: |
+          set -o pipefail
+          mkdir -p artifacts receipts published-receipts
+          npx --yes @runxhq/cli@0.6.2 tool build --all --json | tee artifacts/tool-build.json
+          npx --yes @runxhq/cli@0.6.2 doctor --json | tee artifacts/doctor.json
+          npx --yes @runxhq/cli@0.6.2 harness . --receipt-dir "$GITHUB_WORKSPACE/receipts" --json | tee artifacts/harness.json
+          RECEIPT_ID="$(jq -r '.receipt_ids[0]' artifacts/harness.json)"
+          test -n "$RECEIPT_ID"
+          test "$RECEIPT_ID" != "null"
+          cp "receipts/$RECEIPT_ID.json" "published-receipts/${RECEIPT_ID//:/_}.json"
+      - name: Publish proof branch
+        run: |
+          git config user.name "Versy Proof Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f artifacts receipts published-receipts
+          git commit -m "chore(proof): publish sealed Crossref harness"
+          git push --force origin HEAD:proof
+
