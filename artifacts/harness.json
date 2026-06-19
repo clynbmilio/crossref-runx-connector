@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "case_count": 1,
+  "assertion_error_count": 0,
+  "assertion_errors": [],
+  "case_names": [
+    "crossref-work-search-fixture"
+  ],
+  "receipt_ids": [
+    "sha256:8da57e1a073562c098c3bae211072ea57c205a69e8899f2f7a7ee59f41bc10e5"
+  ],
+  "graph_case_count": 1
+}
